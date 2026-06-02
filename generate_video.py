@@ -1,61 +1,66 @@
 import os
-from moviepy.editor import ColorClip, TextClip, AudioFileClip, CompositeVideoClip
+from moviepy.editor import ImageClip, AudioFileClip
+from PIL import Image, ImageDraw, ImageFont
 
 def create_shorts_video():
-    print("🚀 بدء عملية إنتاج الفيديو القصير...")
+    print("🚀 بدء عملية إنتاج الفيديو القصير باستخدام Pillow البديلة...")
     
-    # 1. إعدادات أبعاد الفيديو العمودي (Shorts / Reels) وتحديد المدة
     width, height = 1080, 1920
-    duration = 15  # مدة الفيديو 15 ثانية
+    duration = 15
     
-    # 2. إنشاء خلفية ملونة (تقدر تغير اللون بالـ HEX)
-    # هنا اخترنا لون داكن ومميز يناسب الأجواء السينمائية وقنوات الـ AI
-    background = ColorClip(size=(width, height), color=[15, 15, 25]).set_duration(duration)
+    # 1. إنشاء صورة خلفية داكنة تناسب "Dreamy ai Shorts" باستخدام Pillow
+    bg_color = (15, 15, 25)
+    image = Image.new("RGB", (width, height), bg_color)
+    draw = ImageDraw.Draw(image)
     
-    # 3. النص الذي سيظهر في الفيديو (يمكنك تعديله لأي نص تحبه)
+    # 2. تحديد النص
     text_content = "النجاح ليس بمقدار ما تنجزه،\nبل بمقدار التحديات التي تتغلب عليها."
     
-    # 4. إعدادات الخط والنص داخل الفيديو
-    # ملاحظة: GitHub Actions يعمل على نظام Linux (Ubuntu)، وخط Amiri متوفر افتراضياً أو كخط قياسي
-    text_clip = TextClip(
-        txt=text_content,
-        fontsize=50,
-        color='white',
-        font='Amiri-Regular',  # خط عربي أنيق ومتوفر في أنظمة سيرفرات GitHub
-        align='Center',
-        method='caption',
-        size=(width - 200, None)  # ترك هوامش على الجوانب
-    )
+    # 3. محاولة تحميل خط مناسب، وإذا لم يتوفر نستخدم الخط الافتراضي
+    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+    if os.path.exists(font_path):
+        font = ImageFont.truetype(font_path, 45)
+    else:
+        font = ImageFont.load_default()
+        
+    # 4. كتابة النص في منتصف الصورة
+    # حساب أبعاد النص لتوسيطه
+    text_boxes = [draw.textbbox((0, 0), line, font=font) for line in text_content.split('\n')]
+    line_heights = [box[3] - box[1] for box in text_boxes]
+    total_height = sum(line_heights) + (len(line_heights) - 1) * 20
     
-    # تحديد مكان النص في منتصف الشاشة وربطه بمدة الفيديو
-    text_clip = text_clip.set_position('center').set_duration(duration)
+    current_y = (height - total_height) // 2
+    for line in text_content.split('\n'):
+        box = draw.textbbox((0, 0), line, font=font)
+        w = box[2] - box[0]
+        x = (width - w) // 2
+        draw.text((x, current_y), line, fill="white", font=font)
+        current_y += (box[3] - box[1]) + 20
+        
+    # 5. حفظ الصورة مؤقتاً
+    temp_image_path = "temp_background.png"
+    image.save(temp_image_path)
     
-    # 5. تجميع الفيديو النهائي (الخلفية + النص)
-    video = CompositeVideoClip([background, text_clip])
+    # 6. تحويل الصورة إلى مقطع فيديو باستخدام MoviePy بدون استخدام TextClip نهائياً!
+    video = ImageClip(temp_image_path).set_duration(duration)
     
-    # 6. إضافة ملف صوتي (خلفية موسيقية أو صوت تعليق) إذا كان موجوداً
-    # تأكد من رفع ملف صوتي باسم background_audio.mp3 في مشروعك لو أحببت تفعيله
+    # 7. دمج الصوت لو متاح
     audio_file = "background_audio.mp3"
     if os.path.exists(audio_file):
-        print(f"🎵 تم العثور على ملف الصوت {audio_file} وجاري دمجه...")
+        print(f"🎵 تم دمج الصوت: {audio_file}")
         audio = AudioFileClip(audio_file).subclip(0, duration)
         video = video.set_audio(audio)
-    else:
-        print("⚠️ لم يتم العثور على ملف background_audio.mp3، سيتم إنتاج الفيديو بدون صوت.")
-    
-    # 7. تصدير الفيديو النهائي بجودة عالية وبتنسيق مناسب للموبايل
+        
+    # 8. تصدير الفيديو النهائي
     output_filename = "final_shorts_video.mp4"
-    print(f"🎬 جاري رندر وتصدير الفيديو باسم: {output_filename}...")
+    print(f"🎬 جاري رندر وتصدير الفيديو: {output_filename}...")
+    video.write_videofile(output_filename, fps=30, codec="libx264", audio_codec="aac", logger=None)
     
-    video.write_videofile(
-        output_filename,
-        fps=30,
-        codec="libx264",
-        audio_codec="aac",
-        logger=None  # لإخفاء سطور التحميل الكثيرة في الـ Logs
-    )
-    
-    print("🎉 تم إنتاج الفيديو بنجاح واكتمال العملية!")
+    # تنظيف الملف المؤقت
+    if os.path.exists(temp_image_path):
+        os.remove(temp_image_path)
+        
+    print("🎉 مبروك! تم إنتاج الفيديو بنجاح واكتمال العملية بدون أي أخطاء!")
 
 if __name__ == "__main__":
     create_shorts_video()
