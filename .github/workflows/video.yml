@@ -1,0 +1,40 @@
+name: Auto Video Generator
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-video:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt update
+          sudo apt install ffmpeg -y
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run video script
+        run: |
+          python main.py
+
+      - name: Upload output video
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-video
+          path: |
+            output.mp4
