@@ -1,15 +1,28 @@
-from moviepy.editor import TextClip, CompositeVideoClip
+name: Video Generation
 
-text = "Hello from AI Video Bot"
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
 
-clip = TextClip(
-    text, 
-    fontsize=70, 
-    color='white', 
-    bg_color='black', 
-    size=(1280, 720),
-    font='DejaVu-Sans-Bold'
-)
-clip = clip.set_duration(5)
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-clip.write_videofile("output.mp4", fps=24, verbose=False, logger=None)
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+    - name: Run script
+      run: python generate_video.py
