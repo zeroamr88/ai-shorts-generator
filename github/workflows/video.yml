@@ -1,29 +1,35 @@
-name: Generate Video
+name: Video Generation Workflow
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: # الميزة دي بتخليك تقدر تشغل الأكشن يدوي في أي وقت بزرار من الموقع
 
 jobs:
-  build:
+  generate:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+    # 1. عمل كcheckout للكود بتاعك من الستوديو للاكشن
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.10
+    # 2. إعداد البيئة وتسطيب بايثون
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10' # نسخة مستقرة وممتازة لـ moviepy
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+    # 3. تحديث pip وتسطيب المكتبات من ملف requirements.txt
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Run script
-        run: python generate_video.py
-
-      - name: Upload video
-        uses: actions/upload-artifact@v4
-        with:
-          name: video
-          path: output.mp4
+    # 4. تشغيل سكريبت إنتاج الفيديو
+    - name: Run Video Generation Script
+      run: python generate_video.py
