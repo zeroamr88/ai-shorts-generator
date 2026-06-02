@@ -14,15 +14,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    # خطوة أساسية لتسطيب برنامج التعديل على الصور والخطوط في السيرفر
-    - name: Install ImageMagick
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y imagemagick
-        # تعديل صلاحيات السياسة لـ ImageMagick عشان يسمح بقراءة وكتابة النصوص والخطوط بدون حظر أمني
-        sudo sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/g' /etc/ImageMagick-6/policy.xml || true
-        sudo sed -i 's/rights="none" pattern="@\*"/rights="read|write" pattern="@*"/g' /etc/ImageMagick-6/policy.xml || true
-
+     Sir, wait a few seconds while setting up the tools
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
